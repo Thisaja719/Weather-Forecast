@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weather Forecast App</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #74b9ff, #0984e3);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      color: #fff;
+    }
+    .container {
+      background-color: rgba(255, 255, 255, 0.1);
+      padding: 40px;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+    input, button {
+      padding: 15px;
+      margin-top: 20px;
+      border: none;
+      border-radius: 30px;
+      font-size: 18px;
+      outline: none;
+    }
+    input {
+      width: 70%;
+    }
+    button {
+      background-color: #00cec9;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #00b894;
+    }
+    #weather-info {
+      margin-top: 30px;
+    }
+    .weather-icon {
+      font-size: 60px;
+      margin-bottom: 10px;
+    }
+    .forecast {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 20px;
+    }
+    .forecast-item {
+      background-color: rgba(255, 255, 255, 0.2);
+      padding: 20px;
+      border-radius: 15px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌦️ Weather Forecast</h1>
+    <input type="text" id="city" placeholder="Enter city name" />
+    <button onclick="getWeather()"><i class="fas fa-search"></i> Get Weather</button>
+    <button onclick="getWeatherByLocation()"><i class="fas fa-map-marker-alt"></i> Use My Location</button>
+    <div id="weather-info"></div>
+    <div id="forecast-info" class="forecast"></div>
+  </div>
+
+  <script>
+    async function getWeather(city) {
+      if (!city) {
+        city = document.getElementById('city').value;
+        if (!city) {
+          alert('Please enter a city name or use your location.');
+          return;
+        }
+      }
+
+      const apiKey = 'a1309f6353141c9508156a5918e15a89';
+      const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+      const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric`;
+
+      try {
+        const [weatherResponse, forecastResponse] = await Promise.all([fetch(weatherUrl), fetch(forecastUrl)]);
+
+        if (!weatherResponse.ok || !forecastResponse.ok) {
+          throw new Error('City not found');
+        }
+
+        const data = await weatherResponse.json();
+        const forecastData = await forecastResponse.json();
+
+        const iconCode = data.weather[0].icon;
+        const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+
+        const sunrise = new Date(data.sys.sunrise * 1000).toLocaleTimeString();
+        const sunset = new Date(data.sys.sunset * 1000).toLocaleTimeString();
+
+        document.getElementById('weather-info').innerHTML = `
+          <img src="${iconUrl}" alt="Weather Icon" class="weather-icon" />
+          <h2>${data.name}, ${data.sys.country}</h2>
+          <p><i class="fas fa-temperature-low"></i> Temperature: ${data.main.temp}°C</p>
+          <p><i class="fas fa-cloud"></i> Weather: ${data.weather[0].description}</p>
+          <p><i class="fas fa-tint"></i> Humidity: ${data.main.humidity}%</p>
+          <p><i class="fas fa-wind"></i> Wind Speed: ${data.wind.speed} m/s</p>
+          <p><i class="fas fa-cloud-rain"></i> Chance of Rain: ${data.rain ? data.rain['1h'] || 0 : 0} mm</p>
+          <p><i class="fas fa-sun"></i> Sunrise: ${sunrise}</p>
+          <p><i class="fas fa-moon"></i> Sunset: ${sunset}</p>
+        `;
+      } catch (error) {
+        document.getElementById('weather-info').innerHTML = `<p>${error.message}</p>`;
+      }
+    }
+
+    function getWeatherByLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async (position) => {
+          const { latitude, longitude } = position.coords;
+          const apiKey = 'a1309f6353141c9508156a5918e15a89';
+          const locationUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apiKey}&units=metric`;
+
+          try {
+            const response = await fetch(locationUrl);
+            const data = await response.json();
+            getWeather(data.name);
+          } catch (error) {
+            alert('Unable to fetch weather for your location.');
+          }
+        });
+      } else {
+        alert('Geolocation is not supported by your browser.');
+      }
+    }
+  </script>
+</body>
+</html>
